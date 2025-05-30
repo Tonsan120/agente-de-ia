@@ -1,0 +1,456 @@
+{
+  "name": "whatsapp",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d3284f80-e205-4474-84f0-c693212eb3b7",
+      "name": "Webhook",
+      "webhookId": "a76c0c04-b560-4c50-991e-25c62e37e433"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "db7e1b4b-d0ad-4ca9-9a09-72b2c0fe6cae",
+              "name": "session",
+              "value": "={{ $json.body.session }}",
+              "type": "string"
+            },
+            {
+              "id": "d5399a3b-340a-4882-95b2-f3f1e87ce670",
+              "name": "chatid",
+              "value": "={{ $json.body.payload.from }}",
+              "type": "string"
+            },
+            {
+              "id": "e20d45e3-a040-4f93-a93d-633675f3d344",
+              "name": "pushName",
+              "value": "={{ $json.body.payload._data.Info.PushName }}",
+              "type": "string"
+            },
+            {
+              "id": "82cd363c-715f-4e17-a3dd-3839fa0e3cd2",
+              "name": "payload_id",
+              "value": "={{ $json.body.payload.id }}",
+              "type": "string"
+            },
+            {
+              "id": "e8ea047e-56ab-4239-97d8-1d385f5f0e46",
+              "name": "event",
+              "value": "={{ $json.body.event }}",
+              "type": "string"
+            },
+            {
+              "id": "49f5f283-8b7b-4370-8537-6609e6eef015",
+              "name": "message",
+              "value": "={{ $json.body }}",
+              "type": "string"
+            },
+            {
+              "id": "a81cbf4e-2330-448e-9735-32cdc9999c38",
+              "name": "fromMe",
+              "value": "={{ $json.body.payload.fromMe }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "id": "6f136898-6cf3-4982-b058-85467edc4261",
+      "name": "Dados"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event }}",
+                    "rightValue": "message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0032101a-a0c2-473e-a606-8377bc57e880"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "4b63295c-a5cd-4097-9225-94126be3ef39",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "você é um guia turístico que sabe tudo sobre Foz do Iguaçu e ajuda os viajantes a montarem roteiros personalizados. "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "9e8f83a9-006a-4d79-9f9e-7178513b9215",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        700,
+        220
+      ],
+      "id": "e12513e3-d5df-48cb-a31f-339beacccd3e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "d758JxAJSGH595gF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Dados').item.json.chatid }}",
+        "sessionTTL": 3600,
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        860,
+        220
+      ],
+      "id": "17d2a1e2-c932-4c07-a39b-d71047c35619",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "F2JsafHirEzrqzTL",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Seen",
+        "session": "={{ $('Dados').item.json.session }}",
+        "chatId": "={{ $('Dados').item.json.chatid }}",
+        "messageId": "={{ $('Dados').item.json.payload_id }}",
+        "participant": "",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        1020,
+        0
+      ],
+      "id": "62d48d52-ddad-4cc9-9d20-e43083fd573d",
+      "name": "WAHA",
+      "credentials": {
+        "wahaApi": {
+          "id": "rMSeHoGvRx5ez9bQ",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "={{ $('Dados').item.json.session }}",
+        "chatId": "={{ $('Dados').item.json.chatid }}",
+        "text": "={{ $('AI Agent').item.json.output }}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        1220,
+        0
+      ],
+      "id": "66591da3-08ee-4b4e-920c-b8f7dc4b52c8",
+      "name": "WAHA1",
+      "credentials": {
+        "wahaApi": {
+          "id": "rMSeHoGvRx5ez9bQ",
+          "name": "WAHA account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "accept": "application/json, text/plain, */*",
+            "content-type": "application/json",
+            "user-agent": "WAHA/2025.5.5",
+            "x-webhook-request-id": "01JWF9PE85KCNDEHBR8B13YF4K",
+            "x-webhook-timestamp": "1748565178629",
+            "content-length": "3846",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "host": "host.docker.internal:5678",
+            "connection": "keep-alive"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "id": "evt_01jwf9pe85fz30p6kxa0gwnp6q",
+            "timestamp": 1748565178629,
+            "event": "message",
+            "session": "default",
+            "metadata": {},
+            "me": {
+              "id": "5521997136312@c.us",
+              "pushName": "Adailton Santos",
+              "jid": "5521997136312:31@s.whatsapp.net"
+            },
+            "payload": {
+              "id": "false_120363421555764504@g.us_3EB014F6B50306CEFE215AD6E7F14E2603B17E22_5516981020148@c.us",
+              "timestamp": 1748565177,
+              "from": "120363421555764504@g.us",
+              "fromMe": false,
+              "source": "app",
+              "body": "===\n\n🎯 Último Quiz da Imersão Trader com Resultado!\n\n⏰ Não perca sua chance! Assista às aulas e responda ao QUIZ para concorrer a 1 ano do Pack FPLEME para Ninja, Profit e Vector, com todos os bônus exclusivos.\n\n🏆 Dedicação Premiada! Apenas quem seguir todas as etapas concorre ao prêmio.\n\n🔗 Responda agora:\n\n➡️ https://links.fpleme.com.br/quiz-aula-04\n\n⚠️ Você recebeu esta mensagem por estar inscrito na Imersão. Caso não queira mais notificações, sinta-se à vontade para sair do grupo.\n\n===",
+              "to": "5516981020148@c.us",
+              "participant": "5516981020148@c.us",
+              "hasMedia": false,
+              "media": null,
+              "ack": 2,
+              "ackName": "DEVICE",
+              "replyTo": null,
+              "_data": {
+                "Info": {
+                  "Chat": "120363421555764504@g.us",
+                  "Sender": "5516981020148:25@s.whatsapp.net",
+                  "IsFromMe": false,
+                  "IsGroup": true,
+                  "AddressingMode": "pn",
+                  "SenderAlt": "176678009622569:25@lid",
+                  "RecipientAlt": "",
+                  "BroadcastListOwner": "",
+                  "ID": "3EB014F6B50306CEFE215AD6E7F14E2603B17E22",
+                  "ServerID": 0,
+                  "Type": "text",
+                  "PushName": "Fpleme Ltda",
+                  "Timestamp": "2025-05-30T00:32:57Z",
+                  "Category": "",
+                  "Multicast": false,
+                  "MediaType": "",
+                  "Edit": "",
+                  "MsgBotInfo": {
+                    "EditType": "",
+                    "EditTargetID": "",
+                    "EditSenderTimestampMS": "0001-01-01T00:00:00Z"
+                  },
+                  "MsgMetaInfo": {
+                    "TargetID": "",
+                    "TargetSender": "",
+                    "DeprecatedLIDSession": null,
+                    "ThreadMessageID": "",
+                    "ThreadMessageSenderJID": ""
+                  },
+                  "VerifiedName": null,
+                  "DeviceSentMeta": null
+                },
+                "Message": {
+                  "extendedTextMessage": {
+                    "text": "===\n\n🎯 Último Quiz da Imersão Trader com Resultado!\n\n⏰ Não perca sua chance! Assista às aulas e responda ao QUIZ para concorrer a 1 ano do Pack FPLEME para Ninja, Profit e Vector, com todos os bônus exclusivos.\n\n🏆 Dedicação Premiada! Apenas quem seguir todas as etapas concorre ao prêmio.\n\n🔗 Responda agora:\n\n➡️ https://links.fpleme.com.br/quiz-aula-04\n\n⚠️ Você recebeu esta mensagem por estar inscrito na Imersão. Caso não queira mais notificações, sinta-se à vontade para sair do grupo.\n\n===",
+                    "matchedText": "https://links.fpleme.com.br/quiz-aula-04",
+                    "description": "Responda agora o QUIZ da Aula",
+                    "title": "APERTE AQUI",
+                    "previewType": 0,
+                    "contextInfo": {
+                      "expiration": 604800
+                    }
+                  },
+                  "messageContextInfo": {
+                    "messageSecret": "qTMH9JPhCrAhxz6dLn4iKYy4pkIiIRXOrISmhKnWe5g="
+                  }
+                },
+                "IsEphemeral": true,
+                "IsViewOnce": false,
+                "IsViewOnceV2": false,
+                "IsViewOnceV2Extension": false,
+                "IsDocumentWithCaption": false,
+                "IsLottieSticker": false,
+                "IsEdit": false,
+                "SourceWebMsg": null,
+                "UnavailableRequestID": "",
+                "RetryCount": 0,
+                "NewsletterMeta": null,
+                "RawMessage": {
+                  "ephemeralMessage": {
+                    "message": {
+                      "extendedTextMessage": {
+                        "text": "===\n\n🎯 Último Quiz da Imersão Trader com Resultado!\n\n⏰ Não perca sua chance! Assista às aulas e responda ao QUIZ para concorrer a 1 ano do Pack FPLEME para Ninja, Profit e Vector, com todos os bônus exclusivos.\n\n🏆 Dedicação Premiada! Apenas quem seguir todas as etapas concorre ao prêmio.\n\n🔗 Responda agora:\n\n➡️ https://links.fpleme.com.br/quiz-aula-04\n\n⚠️ Você recebeu esta mensagem por estar inscrito na Imersão. Caso não queira mais notificações, sinta-se à vontade para sair do grupo.\n\n===",
+                        "matchedText": "https://links.fpleme.com.br/quiz-aula-04",
+                        "description": "Responda agora o QUIZ da Aula",
+                        "title": "APERTE AQUI",
+                        "previewType": 0,
+                        "contextInfo": {
+                          "expiration": 604800
+                        }
+                      },
+                      "messageContextInfo": {
+                        "messageSecret": "qTMH9JPhCrAhxz6dLn4iKYy4pkIiIRXOrISmhKnWe5g="
+                      }
+                    }
+                  }
+                },
+                "Status": 3
+              }
+            },
+            "environment": {
+              "version": "2025.5.5",
+              "engine": "GOWS",
+              "tier": "CORE",
+              "browser": null
+            }
+          },
+          "webhookUrl": "http://host.docker.internal:5678/webhook-test/webhook",
+          "executionMode": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAHA": {
+      "main": [
+        [
+          {
+            "node": "WAHA1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cf97e4e3-ef82-41ce-9a29-efc25558eb81",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7648a001be1b107f30766a1d2f9c56e5d00416474df9719bb1f1a04589f315c6"
+  },
+  "id": "vCelZAi08kKU0xvt",
+  "tags": []
+}
